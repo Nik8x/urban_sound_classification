@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Urban Sound Classification: MFCC Features vs a Real CNN</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg:            #fcfcfb;
+  --surface:       #ffffff;
+  --surface-2:     #f4f3f0;
+  --border:        #e4e2dc;
+  --text-primary:  #14140f;
+  --text-secondary:#52514e;
+  --text-muted:    #7a7972;
+  --series-1:      #2a78d6;
+  --series-2:      #eb6834;
+  --series-3:      #1baf7a;
+  --series-4:      #eda100;
+  --good:          #0ca30c;
+  --critical:      #d03b3b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --bg:            #131311;
+    --surface:       #1a1a19;
+    --surface-2:     #212120;
+    --border:        #34332f;
+    --text-primary:  #f5f4f0;
+    --text-secondary:#c3c2b7;
+    --text-muted:    #8f8e86;
+    --series-1:      #3987e5;
+    --series-2:      #d95926;
+    --series-3:      #199e70;
+    --series-4:      #c98500;
+    --good:          #3ecf3e;
+    --critical:      #e66767;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:            #131311;
+  --surface:       #1a1a19;
+  --surface-2:     #212120;
+  --border:        #34332f;
+  --text-primary:  #f5f4f0;
+  --text-secondary:#c3c2b7;
+  --text-muted:    #8f8e86;
+  --series-1:      #3987e5;
+  --series-2:      #d95926;
+  --series-3:      #199e70;
+  --series-4:      #c98500;
+  --good:          #3ecf3e;
+  --critical:      #e66767;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  line-height: 1.55;
+}
+main { max-width: 920px; margin: 0 auto; padding: 2.5rem 1.25rem 5rem; }
+header.hero { margin-bottom: 2.5rem; }
+h1 { font-size: 1.9rem; margin: 0 0 0.5rem; letter-spacing: -0.01em; }
+.lede { color: var(--text-secondary); font-size: 1.05rem; max-width: 68ch; }
+.pill-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
+.pill {
+  font-size: 0.78rem; color: var(--text-secondary); background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: 999px; padding: 0.25rem 0.7rem;
+}
+section { margin: 3rem 0; }
+h2 { font-size: 1.3rem; margin: 0 0 0.3rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+p { color: var(--text-secondary); }
+p.section-intro { margin-top: 0.8rem; }
+figure { margin: 1.2rem 0; }
+figure img { max-width: 100%; display: block; border-radius: 8px; border: 1px solid var(--border); }
+figcaption { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem; }
+.stat-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1px; background: var(--border); border: 1px solid var(--border);
+  border-radius: 10px; overflow: hidden; margin-top: 1.2rem;
+}
+.stat { background: var(--surface); padding: 1rem; }
+.stat .num { font-size: 1.5rem; font-weight: 600; }
+.stat .label { font-size: 0.78rem; color: var(--text-muted); }
+table { border-collapse: collapse; width: 100%; font-size: 0.88rem; margin: 1rem 0; }
+th, td { text-align: left; padding: 0.45rem 0.7rem; border-bottom: 1px solid var(--border); }
+th { color: var(--text-muted); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.02em; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+code { background: var(--surface-2); border-radius: 4px; padding: 0.1rem 0.35rem; font-size: 0.9em; }
+.callout {
+  background: var(--surface-2); border-left: 3px solid var(--series-1);
+  border-radius: 6px; padding: 0.9rem 1.1rem; font-size: 0.92rem;
+  color: var(--text-secondary); margin: 1.2rem 0;
+}
+.callout.warn { border-left-color: var(--series-2); }
+ul.findings { padding-left: 1.2rem; }
+ul.findings li { margin-bottom: 0.8rem; color: var(--text-secondary); }
+ul.findings strong { color: var(--text-primary); }
+footer { margin-top: 3.5rem; padding-top: 1.2rem; border-top: 1px solid var(--border); font-size: 0.85rem; color: var(--text-muted); }
+a { color: var(--series-1); }
+</style>
+</head>
+<body>
+<main>
+
+<header class="hero">
+  <h1>Urban Sound Classification: MFCC Features vs a Real CNN</h1>
+  <p class="lede">
+    The original notebook needed the full ~6.5GB UrbanSound8K archive
+    and imported <code>Convolution2D</code> and <code>MaxPooling2D</code>
+    for a "CNN" that turned out to be a plain dense network on
+    time-averaged MFCC features, with no real train/test evaluation and
+    a test set that was loaded and never scored. This rebuild works
+    from a 450-clip stratified sample (45 per class, fetched directly
+    through per-row audio URLs, no archive download), fixes the feature
+    extraction, and trains an actual CNN alongside classical ML for a
+    fair comparison.
+  </p>
+  <div class="pill-row">
+    <span class="pill">450 clips, 45 per class</span>
+    <span class="pill">120-dim MFCC features (mean+std+delta)</span>
+    <span class="pill">random forest</span>
+    <span class="pill">a genuine Conv2D CNN</span>
+  </div>
+</header>
+
+<section id="eda">
+  <h2>The data</h2>
+  <figure>
+    <img src="assets/waveform_examples.png" alt="Waveform examples for all 10 classes">
+  </figure>
+  <figure>
+    <img src="assets/melspectrogram_examples.png" alt="Mel-spectrogram examples for all 10 classes">
+  </figure>
+  <figure>
+    <img src="assets/duration_by_class.png" alt="Mean clip duration by class">
+    <figcaption>Duration (Kruskal-Wallis p &lt; 0.0001) and RMS loudness (p &lt; 0.0001) both differ significantly by class, gun_shot averages about 4.7x louder than children_playing, exactly what those labels describe.</figcaption>
+  </figure>
+</section>
+
+<section id="original-bugs">
+  <h2>What the original actually did</h2>
+  <ul class="findings">
+    <li><strong>MFCC-mean-only features.</strong> <code>np.mean(mfcc.T, axis=0)</code>
+      threw away everything about how the 40 coefficients change over
+      the clip.</li>
+    <li><strong>The "CNN" was a dense network.</strong>
+      <code>Convolution2D</code> and <code>MaxPooling2D</code> were
+      imported but the actual model was
+      <code>Dense(256) -&gt; Dropout -&gt; Dense(256) -&gt; Dropout -&gt; Dense(softmax)</code>,
+      never a convolution.</li>
+    <li><strong>No real evaluation.</strong> Keras'
+      <code>validation_split=0.3</code> just slices the trailing 30% of
+      an unshuffled array, and <code>test.csv</code> was loaded but
+      never scored against anything.</li>
+  </ul>
+</section>
+
+<section id="model">
+  <h2>Modeling: a fair comparison this time</h2>
+  <p class="section-intro">
+    Fixed 120-dim MFCC features (mean, standard deviation, and delta
+    of 40 coefficients) for a random forest, and fixed-size mel-spectrograms
+    for an actual convolutional model, both evaluated on the same
+    stratified 80/20 split.
+  </p>
+  <table>
+    <thead><tr><th>Model</th><th class="num">Accuracy</th><th class="num">Macro-F1</th></tr></thead>
+    <tbody>
+      <tr><td>Baseline (majority class, balanced 10-way)</td><td class="num">10.0%</td><td class="num">0.000</td></tr>
+      <tr><td><strong>Random forest (MFCC features)</strong></td><td class="num"><strong>74.4%</strong></td><td class="num"><strong>0.743</strong></td></tr>
+      <tr><td>CNN (mel-spectrogram)</td><td class="num">41.1%</td><td class="num">0.371</td></tr>
+    </tbody>
+  </table>
+  <div class="callout warn">
+    The CNN loses to the random forest here, and that's a genuinely
+    useful, honest result, not a verdict that CNNs are worse in
+    general. With only 36 training clips per class, a CNN has to learn
+    useful spatial filters on spectrograms from almost no data, while
+    MFCC extraction already encodes real audio-engineering domain
+    knowledge. At UrbanSound8K's full scale (800+ clips per class), or
+    with transfer learning from an audio-pretrained model, the balance
+    would likely tip the other way. This comparison reflects a
+    laptop-friendly sample size, not the full archive.
+  </div>
+  <figure>
+    <img src="assets/model_comparison.png" alt="Bar chart comparing accuracy and macro-F1 across baseline, random forest, and CNN">
+  </figure>
+  <figure>
+    <img src="assets/cnn_training_curve.png" alt="CNN training and validation loss curves">
+  </figure>
+</section>
+
+<section id="clustering">
+  <h2>Unsupervised: MFCC profiles alone don't cleanly separate all 10 classes</h2>
+  <p class="section-intro">
+    Clustering all 450 clips by their MFCC feature vector, no label
+    involved, then checking against the real classes afterward.
+  </p>
+  <div class="stat-grid">
+    <div class="stat"><div class="num">0.10</div><div class="label">KMeans adjusted Rand index vs true labels</div></div>
+    <div class="stat"><div class="num">0.11</div><div class="label">GMM adjusted Rand index vs true labels</div></div>
+    <div class="stat"><div class="num">0.29</div><div class="label">KMeans vs GMM agreement</div></div>
+  </div>
+  <figure>
+    <img src="assets/clustering_tsne.png" alt="t-SNE plots colored by true class and by KMeans cluster">
+  </figure>
+  <p>
+    Far weaker than the supervised 74.4% accuracy. Classes like
+    <code>car_horn</code> and <code>siren</code> overlap enough in raw
+    MFCC space that unsupervised methods can't cleanly separate them
+    without labels to learn from, a real, honest contrast between what
+    supervision buys you and what feature similarity alone can find.
+  </p>
+</section>
+
+<section id="findings">
+  <h2>Key findings</h2>
+  <ul class="findings">
+    <li><strong>The original's "CNN" never used a convolution.</strong>
+      Its real model was a plain dense network on MFCC-mean features,
+      despite importing Conv2D/MaxPooling2D layers.</li>
+    <li><strong>A proper stratified split and a real held-out test
+      replace Keras' validation_split and an unscored test.csv</strong>,
+      giving an honest number for the first time.</li>
+    <li><strong>Richer MFCC features (mean, std, delta) plus a random
+      forest reach 74.4% accuracy</strong> against a 10% baseline, a
+      genuinely strong result at this sample size.</li>
+    <li><strong>A real CNN underperforms the classical model here</strong>
+      (41.1% vs 74.4%), an honest, scale-dependent finding, not a
+      general verdict on CNNs for audio.</li>
+    <li><strong>Unsupervised clustering only weakly recovers the 10
+      classes</strong> (ARI 0.10-0.11) compared to the supervised
+      result, labels are doing real work here.</li>
+  </ul>
+</section>
+
+<section id="future">
+  <h2>Future work</h2>
+  <ul class="findings">
+    <li>Scale up to the full UrbanSound8K corpus (about 870 clips per
+      class) on a machine with enough disk to hold it, to see whether
+      the CNN overtakes the classical model at full scale, as expected.</li>
+    <li>Try transfer learning from an audio-pretrained model (VGGish,
+      YAMNet, or a similar embedding model) instead of training a CNN
+      from scratch on so little data.</li>
+    <li>Use UrbanSound8K's official 10-fold cross-validation split
+      (grouped by source recording) instead of a plain random split, to
+      avoid any risk of near-duplicate clips from the same source file
+      leaking across train and test.</li>
+  </ul>
+</section>
+
+<footer>
+  Full detail, code, and every number above in the
+  <a href="https://github.com/Nik8x/urban_sound_classification">notebooks</a>.
+</footer>
+
+</main>
+</body>
+</html>

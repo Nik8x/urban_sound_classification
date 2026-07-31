@@ -1,0 +1,8 @@
+{
+  "n_mfcc_features": 120,
+  "spectrogram_shape": [
+    64,
+    173
+  ],
+  "n_classes": 10
+}

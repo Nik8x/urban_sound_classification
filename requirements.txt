@@ -1,0 +1,10 @@
+numpy
+pandas
+scipy
+matplotlib
+scikit-learn
+librosa
+tensorflow>=2.15
+jupyter
+nbformat
+nbconvert

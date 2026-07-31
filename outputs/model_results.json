@@ -1,0 +1,14 @@
+{
+  "baseline (majority class)": {
+    "accuracy": 0.1,
+    "macro_f1": 0.0
+  },
+  "random forest (MFCC)": {
+    "accuracy": 0.7444444444444445,
+    "macro_f1": 0.7427996515158314
+  },
+  "CNN (mel-spectrogram)": {
+    "accuracy": 0.4777777777777778,
+    "macro_f1": 0.44952537871335824
+  }
+}
