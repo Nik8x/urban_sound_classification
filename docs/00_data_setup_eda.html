@@ -7802,15 +7802,13 @@ a.anchor-link {
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h1 id="Urban-sound-classification:-data-setup-and-EDA">Urban sound classification: data setup and EDA<a class="anchor-link" href="#Urban-sound-classification:-data-setup-and-EDA">¶</a></h1><p>The original notebook needed the full UrbanSound8K archive (about 6.5GB
-of audio) to run at all, and only ever trained on the roughly 5,435
-training rows in <code>train.csv</code> since <code>test.csv</code> (3,297 rows) was loaded
-and never scored. This rebuild works from a stratified sample instead,
-45 clips per class (450 total, 10 classes) pulled directly through the
-HuggingFace datasets-server API's per-row signed audio URLs, so nothing
-close to the full archive ever needs to sit on disk. Class balance,
-audio properties, and every downstream step are checked against this
-sample the same way they would be against the full dataset.</p>
+<h1 id="Urban-sound-classification:-data-setup-and-EDA">Urban sound classification: data setup and EDA<a class="anchor-link" href="#Urban-sound-classification:-data-setup-and-EDA">¶</a></h1><p>This works from a stratified sample, 45 clips per class (450 total,
+10 classes) pulled directly through the HuggingFace
+datasets-server API's per-row signed audio URLs, so nothing close to
+the full ~6.5GB UrbanSound8K archive ever needs to sit on disk. Class
+balance, audio properties, and every downstream step are checked
+against this sample the same way they would be against the full
+dataset.</p>
 </div>
 </div>
 </div>

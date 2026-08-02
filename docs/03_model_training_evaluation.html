@@ -7802,22 +7802,14 @@ a.anchor-link {
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h1 id="Model-training-and-evaluation">Model training and evaluation<a class="anchor-link" href="#Model-training-and-evaluation">¶</a></h1><p>Two real fixes to the original's approach. First, an actual stratified
-train/test split (the original used Keras' <code>validation_split</code>, which
-just slices off the trailing fraction of an unshuffled array, not a
-proper held-out evaluation, and <code>test.csv</code> was loaded and never scored
-at all). Second, an actual convolutional model: the original imported
-<code>Convolution2D</code> and <code>MaxPooling2D</code> but its real model was
-<code>Dense -&gt; Dropout -&gt; Dense -&gt; Dropout -&gt; Dense(softmax)</code>, a plain dense
-network on MFCC-mean features, never a CNN. This rebuild trains a
-classical model (random forest) on the fixed 120-dim MFCC features from
-notebook 02, and a small but genuine CNN on the mel-spectrograms,
-compared against each other and against a majority-class baseline.</p>
+<h1 id="Model-training-and-evaluation">Model training and evaluation<a class="anchor-link" href="#Model-training-and-evaluation">¶</a></h1><p>An actual stratified train/test split keeps evaluation honest. This
+notebook trains a classical model (random forest) on the fixed
+120-dim MFCC features from notebook 02, and a Conv2D/MaxPooling2D CNN
+on the mel-spectrograms, compared against each other and against a
+majority-class baseline.</p>
 <p>This sample is small (45 clips per class, 450 total), so treat these
-numbers as a demonstration of a correct, working pipeline rather than a
-state-of-the-art benchmark, the point is that the original pipeline
-never produced an honest number to benchmark against in the first
-place.</p>
+numbers as a demonstration of a correct, working pipeline rather than
+a state-of-the-art benchmark.</p>
 </div>
 </div>
 </div>

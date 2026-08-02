@@ -6,23 +6,12 @@ Classifying 10 categories of urban sound (air conditioner, car horn,
 children playing, dog bark, drilling, engine idling, gun shot,
 jackhammer, siren, street music) from
 [UrbanSound8K](https://urbansounddataset.weebly.com/urbansound8k.html).
-The original notebook is kept in `_old/` untouched, along with its
-`train.csv`/`test.csv`, which reference the full 8,732-clip archive by a
-different ID scheme than the sample used here.
 
-The original needed the ~6.5GB full archive to run, and even then only
-ever trained on `train.csv`'s rows, `test.csv` was loaded and never
-scored. It also imported `Convolution2D` and `MaxPooling2D` for a
-"CNN" that turned out to be a plain dense network on time-averaged MFCC
-features, and evaluated with Keras' `validation_split`, which just
-slices the trailing fraction of an unshuffled array, not a real
-held-out test.
-
-This rebuild works from a 450-clip stratified sample (45 per class),
-fetched directly through the HuggingFace `danavery/urbansound8K`
-mirror's per-row signed audio URLs via the datasets-server API, so
-nothing close to the full archive needs to sit on disk. Notebook 00
-fetches this automatically if `data/manifest.json` doesn't exist yet.
+This works from a 450-clip stratified sample (45 per class), fetched
+directly through the HuggingFace `danavery/urbansound8K` mirror's
+per-row signed audio URLs via the datasets-server API, so nothing close
+to the full ~6.5GB archive needs to sit on disk. Notebook 00 fetches
+this automatically if `data/manifest.json` doesn't exist yet.
 
 ## Notebooks
 
@@ -31,13 +20,12 @@ fetches this automatically if `data/manifest.json` doesn't exist yet.
    audit.
 2. `01_statistical_testing.ipynb`: duration and RMS loudness both
    differ significantly by class (Kruskal-Wallis, both p &lt; 0.0001).
-3. `02_feature_engineering_selection.ipynb`: a real 120-dim MFCC feature
-   vector (mean, standard deviation, and delta of 40 coefficients,
-   instead of the original's mean-only 40 dims), plus fixed-size
-   mel-spectrograms for an actual CNN.
+3. `02_feature_engineering_selection.ipynb`: a 120-dim MFCC feature
+   vector (mean, standard deviation, and delta of 40 coefficients),
+   plus fixed-size mel-spectrograms for a CNN.
 4. `03_model_training_evaluation.ipynb`: random forest on the MFCC
-   features and a genuine Conv2D/MaxPooling2D CNN on the spectrograms,
-   both evaluated on the same stratified held-out test split.
+   features and a Conv2D/MaxPooling2D CNN on the spectrograms, both
+   evaluated on the same stratified held-out test split.
 5. `04_clustering.ipynb`: KMeans and Gaussian mixture clustering by
    MFCC profile alone, checked against the true classes afterward.
 

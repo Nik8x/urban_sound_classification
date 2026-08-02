@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Urban Sound Classification: MFCC Features vs a Real CNN</title>
+<title>Urban Sound Classification: MFCC Features and a CNN</title>
 <style>
 :root {
   color-scheme: light;
@@ -110,23 +110,21 @@ a { color: var(--series-1); }
 <main>
 
 <header class="hero">
-  <h1>Urban Sound Classification: MFCC Features vs a Real CNN</h1>
+  <h1>Urban Sound Classification: MFCC Features and a CNN</h1>
   <p class="lede">
-    The original notebook needed the full ~6.5GB UrbanSound8K archive
-    and imported <code>Convolution2D</code> and <code>MaxPooling2D</code>
-    for a "CNN" that turned out to be a plain dense network on
-    time-averaged MFCC features, with no real train/test evaluation and
-    a test set that was loaded and never scored. This rebuild works
-    from a 450-clip stratified sample (45 per class, fetched directly
-    through per-row audio URLs, no archive download), fixes the feature
-    extraction, and trains an actual CNN alongside classical ML for a
-    fair comparison.
+    Classifying 10 categories of urban sound from a 450-clip stratified
+    sample of UrbanSound8K (45 per class), fetched directly through
+    per-row signed audio URLs so nothing close to the full ~6.5GB
+    archive needs to sit on disk. A 120-dim MFCC feature vector (mean,
+    standard deviation, and delta of 40 coefficients) feeds a random
+    forest, and fixed-size mel-spectrograms feed a Conv2D/MaxPooling2D
+    CNN, both evaluated on the same stratified held-out test split.
   </p>
   <div class="pill-row">
     <span class="pill">450 clips, 45 per class</span>
     <span class="pill">120-dim MFCC features (mean+std+delta)</span>
     <span class="pill">random forest</span>
-    <span class="pill">a genuine Conv2D CNN</span>
+    <span class="pill">Conv2D CNN</span>
   </div>
 </header>
 
@@ -144,31 +142,27 @@ a { color: var(--series-1); }
   </figure>
 </section>
 
-<section id="original-bugs">
-  <h2>What the original actually did</h2>
+<section id="features">
+  <h2>Feature engineering</h2>
   <ul class="findings">
-    <li><strong>MFCC-mean-only features.</strong> <code>np.mean(mfcc.T, axis=0)</code>
-      threw away everything about how the 40 coefficients change over
-      the clip.</li>
-    <li><strong>The "CNN" was a dense network.</strong>
-      <code>Convolution2D</code> and <code>MaxPooling2D</code> were
-      imported but the actual model was
-      <code>Dense(256) -&gt; Dropout -&gt; Dense(256) -&gt; Dropout -&gt; Dense(softmax)</code>,
-      never a convolution.</li>
-    <li><strong>No real evaluation.</strong> Keras'
-      <code>validation_split=0.3</code> just slices the trailing 30% of
-      an unshuffled array, and <code>test.csv</code> was loaded but
-      never scored against anything.</li>
+    <li><strong>120-dim MFCC vectors</strong> (mean, standard deviation,
+      and delta of 40 coefficients) capture how the audio's spectral
+      profile changes over a clip, not just its average.</li>
+    <li><strong>A Conv2D/MaxPooling2D CNN</strong> runs on fixed-size
+      mel-spectrograms, padded or trimmed to a consistent shape across
+      clips of different lengths.</li>
+    <li><strong>A stratified 80/20 split</strong>, held out and scored
+      the same way for every model, keeps the comparison between random
+      forest and CNN fair.</li>
   </ul>
 </section>
 
 <section id="model">
-  <h2>Modeling: a fair comparison this time</h2>
+  <h2>Modeling: classical features vs a convolutional model</h2>
   <p class="section-intro">
-    Fixed 120-dim MFCC features (mean, standard deviation, and delta
-    of 40 coefficients) for a random forest, and fixed-size mel-spectrograms
-    for an actual convolutional model, both evaluated on the same
-    stratified 80/20 split.
+    Random forest on the MFCC features against the CNN on
+    mel-spectrograms, both evaluated on the same stratified 80/20
+    split.
   </p>
   <table>
     <thead><tr><th>Model</th><th class="num">Accuracy</th><th class="num">Macro-F1</th></tr></thead>
@@ -223,18 +217,12 @@ a { color: var(--series-1); }
 <section id="findings">
   <h2>Key findings</h2>
   <ul class="findings">
-    <li><strong>The original's "CNN" never used a convolution.</strong>
-      Its real model was a plain dense network on MFCC-mean features,
-      despite importing Conv2D/MaxPooling2D layers.</li>
-    <li><strong>A proper stratified split and a real held-out test
-      replace Keras' validation_split and an unscored test.csv</strong>,
-      giving an honest number for the first time.</li>
-    <li><strong>Richer MFCC features (mean, std, delta) plus a random
+    <li><strong>MFCC features (mean, std, delta) plus a random
       forest reach 74.4% accuracy</strong> against a 10% baseline, a
       genuinely strong result at this sample size.</li>
-    <li><strong>A real CNN underperforms the classical model here</strong>
-      (41.1% vs 74.4%), an honest, scale-dependent finding, not a
-      general verdict on CNNs for audio.</li>
+    <li><strong>The CNN underperforms the classical model here</strong>
+      (41.1% vs 74.4%), a scale-dependent finding, not a general verdict
+      on CNNs for audio.</li>
     <li><strong>Unsupervised clustering only weakly recovers the 10
       classes</strong> (ARI 0.10-0.11) compared to the supervised
       result, labels are doing real work here.</li>
